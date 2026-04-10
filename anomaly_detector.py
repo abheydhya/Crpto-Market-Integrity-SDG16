@@ -3,12 +3,32 @@ import pandas as pd
 import numpy as np
 
 def fetch_and_analyze(symbol='XRP/USDT', timeframe='1m', limit=100):
-    # Initialize Binance connection
-    exchange = ccxt.binance({'enableRateLimit': True})
-    
-    print(f"Fetching last {limit} minutes of {symbol} data...\n")
-    # Fetch OHLCV (Open, High, Low, Close, Volume) data
-    ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+    # Try multiple exchanges as fallback (Binance is geo-blocked on some cloud hosts)
+    exchanges = [
+        ('binance',  ccxt.binance({'enableRateLimit': True})),
+        ('kucoin',   ccxt.kucoin({'enableRateLimit': True})),
+        ('bybit',    ccxt.bybit({'enableRateLimit': True})),
+        ('okx',      ccxt.okx({'enableRateLimit': True})),
+    ]
+
+    ohlcv = None
+    for name, exchange in exchanges:
+        try:
+            print(f"Trying {name}… ", end="")
+            ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+            print(f"✓ connected to {name}")
+            break
+        except Exception as e:
+            print(f"✗ {e}")
+            continue
+
+    if ohlcv is None:
+        raise RuntimeError(
+            f"Could not fetch {symbol} data from any exchange. "
+            "All sources returned errors — check your network or try again later."
+        )
+
+    print(f"\nFetched last {limit} minutes of {symbol} data.")
     
     # Convert to a Pandas DataFrame
     df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
