@@ -3,3 +3,4 @@ pandas
 numpy
 ccxt
 plotly
+google-generativeai

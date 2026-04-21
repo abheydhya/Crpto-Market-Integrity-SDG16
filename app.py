@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 from anomaly_detector import fetch_and_analyze
+import google.generativeai as genai
 
 # ──────────────────────────────────────────────
 # Page Configuration
@@ -135,6 +136,10 @@ with st.sidebar:
     st.markdown("")
     run_scan = st.button("🔍  Run Scan", use_container_width=True, type="primary")
 
+    st.markdown("---")
+    st.markdown("### 🤖 AI Settings")
+    api_key = st.text_input("Enter Google Gemini API Key to unlock AI Insights", type="password")
+    
     st.markdown("---")
     st.markdown(
         "<div style='color:#8b949e; font-size:.8rem;'>"
@@ -316,6 +321,34 @@ if run_scan:
                 "Z-Score": st.column_config.NumberColumn(format="%.2f"),
             },
         )
+
+        # --- NEW GEMINI AI INTEGRATION ---
+        st.divider()
+        st.subheader("🤖 Gemini AI Threat Analysis")
+        
+        if api_key:
+            try:
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                
+                # We feed the stats to Gemini to get a report
+                max_vol = anomalies['volume'].max()
+                max_z = anomalies['z_score'].max()
+                
+                prompt = f"""
+                Act as a quantitative finance regulatory expert. We just detected a severe market anomaly for {symbol}. 
+                The trading volume suddenly spiked to {max_vol} with a statistical Z-Score of {max_z} (normal is < 3). 
+                Write a brief, 3-sentence threat report explaining why this specific data indicates potential market manipulation (like wash trading) and why it is dangerous for retail investors.
+                """
+                
+                with st.spinner("Gemini AI is analyzing the anomaly..."):
+                    response = model.generate_content(prompt)
+                    st.info(response.text)
+            except Exception as e:
+                st.error(f"AI Analysis Error: Check your API key. ({e})")
+        else:
+            st.warning("👈 Please enter your Gemini API Key in the sidebar to generate the AI Threat Report.")
+
     else:
         st.success("🟢  Market looks normal — no volume anomalies detected in this window.")
 
