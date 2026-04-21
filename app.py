@@ -4,34 +4,22 @@ from anomaly_detector import fetch_and_analyze
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
-import streamlit as st
 
-# Try standard dotenv first
-load_dotenv(override=True)
-api_key = os.getenv("GEMINI_API_KEY")
+# ──────────────────────────────────────────────
+# API Key Loading (Streamlit Cloud → .env fallback)
+# ──────────────────────────────────────────────
+api_key = None
 
-# Fallback: forcefully read .env to bypass any Streamlit caching bugs
+# 1️⃣  Streamlit Cloud secrets (primary — works on deployed app)
+try:
+    api_key = st.secrets["GEMINI_API_KEY"]
+except (KeyError, FileNotFoundError):
+    pass
+
+# 2️⃣  .env file fallback (for local development)
 if not api_key:
-    try:
-        env_paths = [
-            ".env",
-            os.path.join(os.getcwd(), ".env"),
-            r"C:\Users\Abhey\Desktop\crypto\Crypto-Market-Integrity-SDG16\.env"
-        ]
-        for ep in env_paths:
-            if os.path.exists(ep):
-                with open(ep, "r", encoding="utf-8") as f:
-                    for line in f:
-                        if line.strip().startswith("GEMINI_API_KEY="):
-                            val = line.strip().split("=", 1)[1].strip()
-                            if val.startswith('"') and val.endswith('"'): val = val[1:-1]
-                            elif val.startswith("'") and val.endswith("'"): val = val[1:-1]
-                            api_key = val
-                            break
-            if api_key:
-                break
-    except Exception as e:
-        st.sidebar.error(f"API Debug error: {e}")
+    load_dotenv(override=True)
+    api_key = os.getenv("GEMINI_API_KEY")
 
 # ──────────────────────────────────────────────
 # Page Configuration
