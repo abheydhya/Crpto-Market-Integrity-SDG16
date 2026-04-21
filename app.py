@@ -3,14 +3,30 @@ import plotly.graph_objects as go
 from anomaly_detector import fetch_and_analyze
 import google.generativeai as genai
 import os
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(base_dir, ".env"), override=True)
+# Try standard dotenv first
+load_dotenv(override=True)
+api_key = os.getenv("GEMINI_API_KEY")
 
-# Parse file explicitly to bypass Streamlit environment caching issues
-env_dict = dotenv_values(os.path.join(base_dir, ".env"))
-api_key = env_dict.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+# Fallback: forcefully read .env to bypass any Streamlit caching bugs
+if not api_key:
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        env_path = os.path.join(base_dir, ".env")
+        if not os.path.exists(env_path):
+            env_path = ".env"
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip().startswith("GEMINI_API_KEY="):
+                    api_key = line.strip().split("=", 1)[1].strip()
+                    if api_key.startswith('"') and api_key.endswith('"'):
+                        api_key = api_key[1:-1]
+                    elif api_key.startswith("'") and api_key.endswith("'"):
+                        api_key = api_key[1:-1]
+                    break
+    except Exception:
+        pass
 
 # ──────────────────────────────────────────────
 # Page Configuration
@@ -351,6 +367,8 @@ if run_scan:
                     st.info(response.text)
             except Exception as e:
                 st.error(f"AI Analysis Error: Check your API key. ({e})")
+        else:
+            st.error("❌ CRITICAL ERROR: API Key still missing entirely. .env was not found or could not be read.")
 
     else:
         st.success("🟢  Market looks normal — no volume anomalies detected in this window.")
