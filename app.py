@@ -3,10 +3,15 @@ import plotly.graph_objects as go
 from anomaly_detector import fetch_and_analyze
 import google.generativeai as genai
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(base_dir, ".env"), override=True)
+
+# Parse file explicitly to bypass Streamlit environment caching issues
+env_dict = dotenv_values(os.path.join(base_dir, ".env"))
+api_key = env_dict.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+
 # ──────────────────────────────────────────────
 # Page Configuration
 # ──────────────────────────────────────────────
@@ -140,14 +145,6 @@ with st.sidebar:
     st.markdown("")
     run_scan = st.button("🔍  Run Scan", use_container_width=True, type="primary")
 
-    st.markdown("---")
-    st.markdown("### 🤖 AI Settings")
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        st.warning("⚠️ GEMINI_API_KEY is missing from .env file!")
-    else:
-        st.success("✅ AI Insights Enabled")
-    
     st.markdown("---")
     st.markdown(
         "<div style='color:#8b949e; font-size:.8rem;'>"
@@ -354,8 +351,6 @@ if run_scan:
                     st.info(response.text)
             except Exception as e:
                 st.error(f"AI Analysis Error: Check your API key. ({e})")
-        else:
-            st.warning("⚠️ Please configure your GEMINI_API_KEY in the .env file to generate the AI Threat Report.")
 
     else:
         st.success("🟢  Market looks normal — no volume anomalies detected in this window.")
