@@ -4,6 +4,7 @@ from anomaly_detector import fetch_and_analyze
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
+import streamlit as st
 
 # Try standard dotenv first
 load_dotenv(override=True)
@@ -12,21 +13,25 @@ api_key = os.getenv("GEMINI_API_KEY")
 # Fallback: forcefully read .env to bypass any Streamlit caching bugs
 if not api_key:
     try:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        env_path = os.path.join(base_dir, ".env")
-        if not os.path.exists(env_path):
-            env_path = ".env"
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip().startswith("GEMINI_API_KEY="):
-                    api_key = line.strip().split("=", 1)[1].strip()
-                    if api_key.startswith('"') and api_key.endswith('"'):
-                        api_key = api_key[1:-1]
-                    elif api_key.startswith("'") and api_key.endswith("'"):
-                        api_key = api_key[1:-1]
-                    break
-    except Exception:
-        pass
+        env_paths = [
+            ".env",
+            os.path.join(os.getcwd(), ".env"),
+            r"C:\Users\Abhey\Desktop\crypto\Crypto-Market-Integrity-SDG16\.env"
+        ]
+        for ep in env_paths:
+            if os.path.exists(ep):
+                with open(ep, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip().startswith("GEMINI_API_KEY="):
+                            val = line.strip().split("=", 1)[1].strip()
+                            if val.startswith('"') and val.endswith('"'): val = val[1:-1]
+                            elif val.startswith("'") and val.endswith("'"): val = val[1:-1]
+                            api_key = val
+                            break
+            if api_key:
+                break
+    except Exception as e:
+        st.sidebar.error(f"API Debug error: {e}")
 
 # ──────────────────────────────────────────────
 # Page Configuration
