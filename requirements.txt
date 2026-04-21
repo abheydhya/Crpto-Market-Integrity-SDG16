@@ -4,3 +4,4 @@ numpy
 ccxt
 plotly
 google-generativeai
+python-dotenv

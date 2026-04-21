@@ -2,6 +2,10 @@ import streamlit as st
 import plotly.graph_objects as go
 from anomaly_detector import fetch_and_analyze
 import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ──────────────────────────────────────────────
 # Page Configuration
@@ -138,7 +142,11 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🤖 AI Settings")
-    api_key = st.text_input("Enter Google Gemini API Key to unlock AI Insights", type="password")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        st.warning("⚠️ GEMINI_API_KEY is missing from .env file!")
+    else:
+        st.success("✅ AI Insights Enabled")
     
     st.markdown("---")
     st.markdown(
@@ -347,7 +355,7 @@ if run_scan:
             except Exception as e:
                 st.error(f"AI Analysis Error: Check your API key. ({e})")
         else:
-            st.warning("👈 Please enter your Gemini API Key in the sidebar to generate the AI Threat Report.")
+            st.warning("⚠️ Please configure your GEMINI_API_KEY in the .env file to generate the AI Threat Report.")
 
     else:
         st.success("🟢  Market looks normal — no volume anomalies detected in this window.")
